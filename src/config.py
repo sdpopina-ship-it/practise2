@@ -8,6 +8,7 @@ import tomllib
 
 
 DEFAULT_MAX_DEPTH = 3
+MINIMUM_MAX_DEPTH = 1
 
 
 class ConfigError(ValueError):
@@ -75,7 +76,11 @@ def require_positive_integer(
 ) -> int:
     """Возвращает обязательное положительное целое число."""
     value = raw_config.get(field_name)
-    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int)
+        or value < MINIMUM_MAX_DEPTH
+    ):
         message = f"Параметр {field_name} должен быть целым числом от 1."
         raise ConfigError(message)
     return value

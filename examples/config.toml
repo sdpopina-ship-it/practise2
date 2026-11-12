@@ -1,7 +1,7 @@
-# Рабочий пример первого этапа: используется тестовый репозиторий.
-package_name = "demo-package"
-repository = "test_repository.json"
-use_test_repository = true
-package_version = "1.0.0"
+# Рабочий пример второго этапа: данные запрашиваются у реестра npm.
+package_name = "express"
+repository = "https://registry.npmjs.org"
+use_test_repository = false
+package_version = "4.21.2"
 ascii_tree = true
 max_depth = 3

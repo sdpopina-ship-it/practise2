@@ -1,0 +1,7 @@
+# Конфигурация тестового режима понадобится на третьем этапе.
+package_name = "demo-package"
+repository = "test_repository.json"
+use_test_repository = true
+package_version = "1.0.0"
+ascii_tree = true
+max_depth = 3

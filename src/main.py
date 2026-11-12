@@ -1,10 +1,11 @@
-"""Точка входа первого этапа практической работы."""
+"""Точка входа второго этапа практической работы."""
 
 import argparse
 from pathlib import Path
 from typing import Sequence
 
 from src.config import AppConfig, ConfigError, load_config
+from src.npm_client import Dependency, NpmClientError, get_direct_dependencies
 
 
 DEFAULT_CONFIG_PATH = Path("examples/config.toml")
@@ -13,7 +14,7 @@ DEFAULT_CONFIG_PATH = Path("examples/config.toml")
 def create_parser() -> argparse.ArgumentParser:
     """Создаёт парсер аргумента пути к TOML-конфигурации."""
     parser = argparse.ArgumentParser(
-        description="Визуализатор графа зависимостей npm (этап 1)."
+        description="Визуализатор графа зависимостей npm (этап 2)."
     )
     parser.add_argument(
         "--config",
@@ -36,8 +37,20 @@ def format_settings(config: AppConfig) -> tuple[str, ...]:
     )
 
 
+def format_dependencies(
+    dependencies: tuple[Dependency, ...],
+) -> tuple[str, ...]:
+    """Преобразует зависимости в строки для вывода командной строки."""
+    if not dependencies:
+        return ("Прямые зависимости не найдены.",)
+    return tuple(
+        f"{dependency.name}: {dependency.version_range}"
+        for dependency in dependencies
+    )
+
+
 def main(arguments: Sequence[str] | None = None) -> int:
-    """Выводит проверенные параметры первого этапа или сообщение об ошибке."""
+    """Выводит прямые зависимости npm-пакета или сообщение об ошибке."""
     parser = create_parser()
     options = parser.parse_args(arguments)
     try:
@@ -45,8 +58,14 @@ def main(arguments: Sequence[str] | None = None) -> int:
     except ConfigError as error:
         print(f"Ошибка конфигурации: {error}")
         return 1
-    print("Параметры запуска:")
-    print(*format_settings(config), sep="\n")
+    try:
+        dependencies = get_direct_dependencies(config)
+    except NpmClientError as error:
+        print(f"Ошибка npm: {error}")
+        return 1
+    package = f"{config.package_name}@{config.package_version}"
+    print(f"Прямые зависимости {package}:")
+    print(*format_dependencies(dependencies), sep="\n")
     return 0
 
 
