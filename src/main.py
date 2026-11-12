@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import Sequence
 
 from src.config import AppConfig, ConfigError, load_config
-from src.npm_client import Dependency, NpmClientError, get_direct_dependencies
+from src.graph import GraphError, format_graph, build_dependency_graph
+from src.npm_client import NpmClientError
 
 
 DEFAULT_CONFIG_PATH = Path("examples/config.toml")
@@ -14,7 +15,7 @@ DEFAULT_CONFIG_PATH = Path("examples/config.toml")
 def create_parser() -> argparse.ArgumentParser:
     """Создаёт парсер аргумента пути к TOML-конфигурации."""
     parser = argparse.ArgumentParser(
-        description="Визуализатор графа зависимостей npm (этап 2)."
+        description="Визуализатор графа зависимостей npm (этап 3)."
     )
     parser.add_argument(
         "--config",
@@ -37,20 +38,8 @@ def format_settings(config: AppConfig) -> tuple[str, ...]:
     )
 
 
-def format_dependencies(
-    dependencies: tuple[Dependency, ...],
-) -> tuple[str, ...]:
-    """Преобразует зависимости в строки для вывода командной строки."""
-    if not dependencies:
-        return ("Прямые зависимости не найдены.",)
-    return tuple(
-        f"{dependency.name}: {dependency.version_range}"
-        for dependency in dependencies
-    )
-
-
 def main(arguments: Sequence[str] | None = None) -> int:
-    """Выводит прямые зависимости npm-пакета или сообщение об ошибке."""
+    """Строит и выводит граф зависимостей или сообщение об ошибке."""
     parser = create_parser()
     options = parser.parse_args(arguments)
     try:
@@ -59,13 +48,13 @@ def main(arguments: Sequence[str] | None = None) -> int:
         print(f"Ошибка конфигурации: {error}")
         return 1
     try:
-        dependencies = get_direct_dependencies(config)
-    except NpmClientError as error:
-        print(f"Ошибка npm: {error}")
+        graph = build_dependency_graph(config)
+    except (GraphError, NpmClientError) as error:
+        print(f"Ошибка построения графа: {error}")
         return 1
     package = f"{config.package_name}@{config.package_version}"
-    print(f"Прямые зависимости {package}:")
-    print(*format_dependencies(dependencies), sep="\n")
+    print(f"Граф зависимостей {package}:")
+    print(*format_graph(graph), sep="\n")
     return 0
 
 

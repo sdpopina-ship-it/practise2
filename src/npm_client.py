@@ -15,6 +15,8 @@ REQUEST_TIMEOUT_SECONDS = 10
 NPM_ACCEPT_HEADER = "application/json"
 USER_AGENT = "npm-dependency-visualizer/1.0"
 HTTP_NOT_FOUND_STATUS = 404
+VERSION_RANGE_PREFIXES = ("^", "~", "=")
+LOWER_BOUND_PREFIXES = (">=", ">")
 
 
 class NpmClientError(RuntimeError):
@@ -35,10 +37,24 @@ def get_direct_dependencies(config: AppConfig) -> tuple[Dependency, ...]:
         raise NpmClientError(
             "На этапе 2 use_test_repository должно быть установлено в false."
         )
-    package_url = build_package_url(
+    return get_package_dependencies(
         config.repository,
         config.package_name,
         config.package_version,
+    )
+
+
+def get_package_dependencies(
+    repository_url: str,
+    package_name: str,
+    package_version: str,
+) -> tuple[Dependency, ...]:
+    """Получает прямые зависимости пакета по имени и версии."""
+    requested_version = resolve_version_request(package_version)
+    package_url = build_package_url(
+        repository_url,
+        package_name,
+        requested_version,
     )
     metadata = download_package_metadata(package_url)
     return extract_direct_dependencies(metadata)
@@ -53,6 +69,21 @@ def build_package_url(
     encoded_name = quote(package_name, safe="")
     encoded_version = quote(package_version, safe="")
     return f"{repository_url.rstrip('/')}/{encoded_name}/{encoded_version}"
+
+
+def resolve_version_request(version_specifier: str) -> str:
+    """Выбирает нижнюю точную версию из распространённого npm-диапазона."""
+    version = version_specifier.strip()
+    if not version:
+        message = "Диапазон версии зависимости не может быть пустым."
+        raise NpmClientError(message)
+    for prefix in VERSION_RANGE_PREFIXES:
+        if version.startswith(prefix):
+            return version.removeprefix(prefix)
+    for prefix in LOWER_BOUND_PREFIXES:
+        if version.startswith(prefix):
+            return version.removeprefix(prefix).split(maxsplit=1)[0]
+    return version
 
 
 def download_package_metadata(package_url: str) -> dict[str, Any]:

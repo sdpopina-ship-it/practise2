@@ -9,6 +9,8 @@ from src.npm_client import (
     build_package_url,
     extract_direct_dependencies,
     get_direct_dependencies,
+    get_package_dependencies,
+    resolve_version_request,
 )
 
 
@@ -64,6 +66,30 @@ class NpmClientTests(unittest.TestCase):
             dependencies = get_direct_dependencies(build_config())
         self.assertEqual(dependencies[0].name, "library")
         self.assertIn("demo-package/1.0.0", download.call_args.args[0])
+
+    def test_resolves_common_version_ranges(self) -> None:
+        """Рекурсивный запрос использует точную нижнюю версию диапазона."""
+        examples = (
+            ("^1.2.3", "1.2.3"),
+            ("~4.5.6", "4.5.6"),
+            (">=2.0.0 <3.0.0", "2.0.0"),
+        )
+        for source, expected in examples:
+            with self.subTest(source=source):
+                self.assertEqual(resolve_version_request(source), expected)
+
+    def test_fetches_dependency_by_resolved_range(self) -> None:
+        """Диапазон версии превращается в URL точной версии для npm."""
+        with patch(
+            "src.npm_client.download_package_metadata",
+            return_value={},
+        ) as download:
+            get_package_dependencies(
+                "https://registry.npmjs.org",
+                "library",
+                "~1.2.3",
+            )
+        self.assertIn("library/1.2.3", download.call_args.args[0])
 
     def test_rejects_test_repository_at_stage_two(self) -> None:
         """На втором этапе данные должны запрашиваться по URL реестра npm."""

@@ -41,7 +41,8 @@ class ConfigurationTests(unittest.TestCase):
         """Корректная конфигурация создаёт объект со всеми параметрами."""
         config = load_config(self.write_config(VALID_CONFIG))
         self.assertEqual(config.package_name, "demo-package")
-        self.assertEqual(config.repository, "repository.json")
+        expected_repository = (self.base_path / "repository.json").resolve()
+        self.assertEqual(config.repository, str(expected_repository))
         self.assertFalse(config.ascii_tree)
         self.assertEqual(config.max_depth, 2)
 

@@ -1,0 +1,6 @@
+package_name = "A"
+repository = "test_repository_cycle.json"
+use_test_repository = true
+package_version = "test"
+ascii_tree = false
+max_depth = 4

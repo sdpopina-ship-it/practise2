@@ -7,7 +7,6 @@ from urllib.parse import urlparse
 import tomllib
 
 
-DEFAULT_MAX_DEPTH = 3
 MINIMUM_MAX_DEPTH = 1
 
 
@@ -94,21 +93,20 @@ def require_repository(
     """Проверяет URL npm-репозитория или файл тестового репозитория."""
     repository = require_text(raw_config, "repository")
     if test_mode:
-        verify_test_repository(repository, base_path)
-    else:
-        verify_repository_url(repository)
+        return str(verify_test_repository(repository, base_path))
+    verify_repository_url(repository)
     return repository
 
 
-def verify_test_repository(repository: str, base_path: Path) -> None:
-    """Проверяет, что тестовый репозиторий существует в файловой системе."""
+def verify_test_repository(repository: str, base_path: Path) -> Path:
+    """Проверяет файл тестового репозитория и возвращает абсолютный путь."""
     repository_path = Path(repository).expanduser()
     if not repository_path.is_absolute():
         repository_path = base_path / repository_path
     if not repository_path.is_file():
         message = "В режиме тестирования repository должен ссылаться на файл: "
         raise ConfigError(message + str(repository_path))
-
+    return repository_path.resolve()
 
 def verify_repository_url(repository: str) -> None:
     """Проверяет, что адрес репозитория является HTTP(S)-URL."""
